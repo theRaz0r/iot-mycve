@@ -14,7 +14,7 @@ Enter the page with a weak password, and then upgrade_filter.asp page path param
 
 ![](vx_images/411367237727821.png)
 
-DI8100.py
+DI8103.py
 
 ```
 
