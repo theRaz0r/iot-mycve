@@ -8,9 +8,18 @@
         },
         {
             "name": "Dlink_DI8003_command_injection"
+        },
+        {
+            "name": "Dlink_DI8003_stackoverflow"
+        },
+        {
+            "name": "tenda_ac15_stackflow_formSetDeviceName"
+        },
+        {
+            "name": "tenda_ac15_stackflow_formDLNAserver"
         }
     ],
-    "id": "296",
+    "id": "327",
     "modified_time": "2024-08-06T03:47:32Z",
     "signature": "12658096074254294228",
     "version": 3
