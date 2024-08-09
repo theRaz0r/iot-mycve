@@ -1,6 +1,6 @@
 # tenda_ac15_stackflow_formDLNAserver
 
-The front-end accesses the SetDlnaCfg function, which causes a stack overflow in the formDLNAserver function's scanList variable.
+The front-end accesses the SetDlnaCfg function, which causes a stack overflow in the formDLNAserver function's scanList variable.After constructing the ROP chain, malicious code can be executed.
 
 
 
