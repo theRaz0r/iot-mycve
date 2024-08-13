@@ -33,9 +33,18 @@
         },
         {
             "name": "tenda_ac6_rce_WriteFacMac"
+        },
+        {
+            "name": "tenda_ac6_stackoverflower_setSmartPowerManagement"
+        },
+        {
+            "name": "tenda_ac6_stackoverflower_formSetPPTPServer"
+        },
+        {
+            "name": "xxxxxxxxxxx_tenda_ac6_dos_formSetPPTPServer"
         }
     ],
-    "id": "357",
+    "id": "378",
     "modified_time": "2024-08-06T03:47:32Z",
     "signature": "12658096074254294228",
     "version": 3
