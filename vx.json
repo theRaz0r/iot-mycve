@@ -30,9 +30,12 @@
         },
         {
             "name": "tenda_ac6_stackflow_formSetDeviceName"
+        },
+        {
+            "name": "tenda_ac6_rce_WriteFacMac"
         }
     ],
-    "id": "338",
+    "id": "357",
     "modified_time": "2024-08-06T03:47:32Z",
     "signature": "12658096074254294228",
     "version": 3
