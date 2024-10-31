@@ -1,89 +1,11 @@
 # netgearR6220
 
-发现netgearR6200中，存在一个未授权，但是光未授权，太鸡肋了。想找一个命令执行，结合来使用，于是就有了这篇文章。
-这里未授权的exp很简单，
+There is an unauthorized connection in NetGear 6200, but the unauthorized connection is too weak. Want to find a command to execute, combined to use, so there is this article.
+The unauthorized exp here is simple,
 ```
-http://83.251.186.152/index.htm%00currentsetting.htm
+http://83.251.186.xxx/index.htm%00currentsetting.htm
 ```
-就是在url中添加%00currentsetting.htm可以绕过授权检查。这里的原理我在另一篇文章https://github.com/theRaz0r/Iot-vulnerability/blob/main/Netgear/DGN1000_unauthorized_comamnd_injection/DGN1000_unauthorized_comamnd_injection.md已经有过详细分析。
-
-
----
-
-
-
-程序的逻辑为url传递到8080端口由mini_httpd来执行程序，最后当我们的url中含有setup.cgi的时候，程序会去调用另一个程序setup.cgi ，参数是以环境变量的形式传递的。
-
-
-首先简单分析下，setup.cgi   ，当url中todo为debug时，程序会调用函数sub_41110C，而此函数会启动telnetd服务，支持远程telnet
-![](vx_images/307901560123361.png)
-
-
-
-![](vx_images/300324696890155.png)
-
-
-我们简单构造先试一试
-
-![](vx_images/233113499350404.png)
-
-发现回显未授权Unauthorized。
-经过字符串搜索发现，Unauthorized的处理逻辑应该全在mini_httpd中，只有通过授权，才会调用到setup.cgi
-
-我们结合利用%00currentsetting.htm试试，
-![](vx_images/29923153184967.png)
-
-
-发现并无回显，怎么回事呢，我们来分析下debug调用的函数
-![](vx_images/433865906404515.png)
-发现url中要不含有htm,html,next_file,this_file这四个字符串，才能正常执行。含有的话，就直接return 0了。但是我们这里要利用未授权的话，是必须要含有%00currentsetting.htm，也就是肯定有htm的。
-所以我们换一个函数，验证下，是否是我们推断的原因。
-
-![](vx_images/444845099542711.png)
-程序中，这一段函数都是todo参数，通过解析字符串来调用的功能，我们可以在其中找一个试试。
-
-我选择了ppp_debug来实验
-
-![](vx_images/492063615981066.png)
-![](vx_images/290944601981045.png)
-
-果然 ，现在程序有回显了
-![](vx_images/218626207317762.png)
-
-显示 403 Forbidden。搜索了下字符串
-在setup.cgi中发现了send_forbidden
-![](vx_images/121286479915841.png)
-
-
-那么走到这里至少说明我们的程序是确实是通过未授权，启动了setup.cgi，成功将参数传递了进来
-
-接下来，我们在todo对应解析的函数中，寻找是否有命令注入。
-
-
-
-iserver_allow_ctrl在这里发现一个注入点
-![](vx_images/99473876619293.png)
-
-虽然他这里过滤了，但是我研究了一下应该是能绕过的。
-![](vx_images/73257517309708.png)
-
-尝试构造了一下exp,但是无回显。
-![](vx_images/282887092974915.png)
-
-我们先模拟一下，setup.cgi 试试 ，看命令COMMAND("/bin/echo %s >> /tmp/itunes/apple.remote", v8);是否真的执行了。
-
-
----
-
-用户模拟setup.cgi
-
-![](vx_images/317126854852105.png)
-
-根据提示，添加环境变量REQUEST_METHOD
-
-
-
-![](vx_images/282856370639838.png)
+Just adding %00currentsetting.htm to the url bypasses the authorization check. The principle here https://github.com/theRaz0r/Iot-vulnerability/blob/main/Netgear/DGN1000_unauthorized_comamnd_injection/DGN1000_unauthorized_comamnd_injection.md has been analyzed in detail.
 
 
 
@@ -91,32 +13,32 @@ iserver_allow_ctrl在这里发现一个注入点
 ---
 
 
-## 命令执行
+## Command execution
 
 ![](vx_images/581632855402960.png)
 ![](vx_images/402743549525060.png)
-发现todo=funjsq_login会调用sub_406790函数，而其中的funjsq_access_token会造成命令执行。
+todo=funjsq_login calls the sub_406790 function, and the funjsq_access_token in it causes the command to execute.
 
-动态调试一下
+Dynamic debugging
 ![](vx_images/50594073009872.png)
 
 ![](vx_images/464842752139221.png)
-执行command的时候，查看下s0寄存器的值。
+When executing command, check the value of the s0 register
 ![](vx_images/202371524866445.png)
-发现我们的值，已经进来了。
-他这里会执行
+Found our value has come in.
+He'll execute it here
 COMMAND("/tmp/funjsq/bin/funjsq.sh login 123465789|ls>1")
 
 ---
-# 在线测试
-因为模拟不起来，找一台在线机器测试一下
+# Online test
+Because the simulation doesn't work, find an online machine to test it
 
 ![](vx_images/363397894279190.png)
 
-这里成功收到了信号
+The signal was successfully received here
 ![](vx_images/474649059353417.png)
 
-成功完成未授权RCE。
+The unauthorized RCE successfully completed.
 
 ---
 

@@ -10,101 +10,93 @@
 ![](vx_images/21526719452531.png)
 
 
-最后在这里发现了个后门页面，访问发现可以命令执行 。
+Finally found a backdoor page here, access to find can command execution.
 
 
 ![](vx_images/535906218752489.png)
 
 ![](vx_images/77490624384333.png)
 
-但是现在是已授权命令执行，我们需要绕过BA认证。
+But now that the authorized command is executed, we need to bypass BA authentication.
 ![](vx_images/536381941701306.png)
-删除Authorization: Basic YWRtaW46cGFzc3dvcmQ=后，会显示Authorization: warning，无法命令执行。
+After Authorization: Basic YWRtaW46cGFzc3dvcmQ= is deleted, Authorization: warning is displayed, and the command cannot be executed.
 
 ---
-# 未授权绕过
+# Unauthorized bypass
 
-本服务是用mini_httpd起的，Authorization功能应该也是在其中的。我们用ida分析看看
+This service starts with mini_httpd, and the Authorization function should also be included. Let's do an ida analysis
 
 ![](vx_images/471122002746760.png)
-尝试用授权相关的字符串定位WWW-Authenticate:
+Try to locate WWW-Authenticate with an authorization-related string:
 
 ![](vx_images/596833289219970.png)
 
-查看上级调用的函数，注意到系统日志记录了Administrator login successful - IP:%s
+Looking at the function called from above, notice that the system log records Administrator login success-ip :%s
 ![](vx_images/390022922856594.png)
 
 
 
-接下来，我们注意到打印登录成功日志前，有一个判断。
+Next, we notice a judgment before printing the login success log.
 ![](vx_images/552905401506301.png)
 
-如果flag==0  就会正常执行登录流程，并用kill(ppid,1)将程序挂起。而kill(ppid,17)则会终止程序。这也从侧面说明，它是授权判断完成后，再结束程序的，所以我们只要能控制flag的值为0，很可能就能登录成功。
+If flag==0, the login process is executed normally and the program is suspended with kill(ppid,1). kill(ppid,17) terminates the program. This also shows from the side that it is the authorization judgment is completed, and then the end of the program, so as long as we can control the value of flag 0, it is likely to be able to log in successfully.
 
 ---
 
-所以这里我们去查看flag的引用，看是否又可以给它赋值的地方。
+So here we go and look at the reference to flag to see if we can assign a value to it again.
 
 
 ![](vx_images/483973858331806.png)
 
-我们看到这里给flag赋值了。
-同时让我们再来关注下a1是从哪里来的
+We see that flag is assigned here.
+But let's also focus on where does a1 come from
 ![](vx_images/533044257912102.png)
-首先a1由调用函数传参。
+First a1 is passed by the calling function.
 
 ![](vx_images/290821426444562.png)
-来自于dword_100000DC.
+This parameter is obtained from dword_100000DC.
 ![](vx_images/418902345195970.png)
 
-在整个上层函数中，只有这里调用了它。
-程序的逻辑如下
+Of all the upper functions, this is the only one that calls it.
+The logic of the program is as follows
 ```
 currentsetting.htm存在 -----》dword_100000DC=0   -------》a1=0   ---------》不进入if(a1),直接执行后面的功能
+Currentsetting. HTM there -- -- -- -- -- "dword_100000DC = 0 -- -- -- -- -- -- -- > a1 = 0 -- -- -- -- -- -- -- -- --" don't enter the if (a1), perform the functions directly
 ```
 
 
 
 
 
-详细分析下if(a1)这里
+Let's analyze if(a1) in detail here
 
 ![](vx_images/434784871821804.png)
 
 
-如果flag==1的话，跳转到lable12
+If flag==1, jump to lable12
 ![](vx_images/490116421823088.png)
 
-# 结构体stat知识补充
-```
-int stat(const char *path, struct stat *buf);
-参数
-    path：要获取状态信息的文件或目录的路径。
-    buf：指向一个 struct stat 结构体的指针，stat 函数会将文件状态信息填充到这个结构体中。
-返回值
-    返回 0 表示成功。
-    返回 -1 表示失败，并设置 errno 以指示具体错误。
-```
-
-# 代码分析
 
 
- 前面定义了
+# Code analysis
+
+
+ Previously defined
  char v116[10000]; // [sp+2B28h] [-3330h] BYREF
  struct stat v117; // [sp+5238h] [-C20h] BYREF
 
 
 ![](vx_images/297617282595866.png)
-这里拼接路径，加上后缀/.htpasswd
-stat 函数用于检查 .htpasswd 文件是否存在，如果不存在且 IP 地址与预期不符，则记录管理员登录成功的日志
+Here the path is concatenated with the suffix /.htpasswd
+The stat function is used to check whether the.htpasswd file exists. If it does not exist and the IP address is different from the expected one, the administrator logs in successfully
 
 ---
 
-解释下这个判断
+Explain that judgment
 ![](vx_images/144466560117124.png)
 ```
-这个地方，是因为每次进来的数据包ip_addr会被存在&byte_10000040这个位置。只有另一个ip再登录的时候，才会系统才会打印"Administrator login successful - IP:%s"
-不做这个判断的话，同一个ip每次发一个包，日志就会记录这个
+This is because each incoming packet ip_addr is stored in the location &byte_10000040. The system will print "Administrator login success-ip :%s" only when you login from another IP address.
+If you do not make this judgment, each time a packet is sent from the same ip address, the log records this
 ```
 
 ---
@@ -114,57 +106,40 @@ stat 函数用于检查 .htpasswd 文件是否存在，如果不存在且 IP 地
 
 
 
-如果这里没有进入if(stat())
-程序会执行如下  代码行173到292
+if you don't enter if(stat())
+The program executes lines 173 through 292
 ```
 
 ```
 
 ![](vx_images/326568052935500.png)
 
-先判断dword_100073B0是否存在，不存在输出未授权
-拿出前6个字节，和Basic 比较，不一样也输出未授权。
-那很明显，后面它就要比较base64加密后的密码了
+Check whether dword_100073B0 exists and no unauthorized output exists
+Take the first 6 bytes, and compared to Basic, it also outputs unauthorized.
+Then, obviously, it will have to compare base64 encrypted passwords
 
 ![](vx_images/216386443090192.png)
-果然下面调用了strcmp  ,且在比较后打印是否授权成功。
+Sure enough, the following call strcmp, and after the comparison print whether the authorization is successful.
 
 
 
 ---
-所以到这里我们可以判断，
+So here we can say,
 
-当a1=1,flag=0,会直接认证成功。
-当a1=1,flag=1时，会进行账号密码的验证。
-当a1=0, 会直接if（）中的语句，直接绕过验证，继续执行LABEL_61:  后的代码
-
----
-
-
-因为验证是否授权，都在这个if(a1)中，所以a1=0  直接跳到后面，实现了未授权。
-
-
-
-# 向上寻找输入点
-所以综合上述，我们只要保证dword_10007390中有currentsetting.htm就可能实现未授权命令执行。
-
-![](vx_images/483973858331806.png)
-
----
-## 思路1
-简单思路如下：
-![](vx_images/42327572223737.png)
-
-dword_10007390之前先做了判断，之后来自于格式化字符串/ca/setup.cgi?next_file=%s格式。感觉上是从url头获取的值，所以尝试一下，也可以越权
-
-
-![](vx_images/83186467257873.png)
-
-成功越权了。
+If a1=1 and flag=0, the authentication succeeds.
+When a1=1 and flag=1, the account password is verified.
+When a1=0, the statement in if () is directly bypassed, and the code after LABEL_61: continues to execute
 
 ---
 
-exp编写
+
+Since the verification of authorization is all in this if(a1), a1=0 jumps right to the back, implementing unauthorization.
+
+
+
+---
+
+exp
 
 ```
 import requests

@@ -39,9 +39,15 @@
         },
         {
             "name": "xxxxxxxxxxx_tenda_ac6_dos_formSetPPTPServer"
+        },
+        {
+            "name": "DGN1000_unauthorized_comamnd_injection"
+        },
+        {
+            "name": "netgearR6220_unauthorized_comamnd_injection"
         }
     ],
-    "id": "378",
+    "id": "384",
     "modified_time": "2024-08-06T03:47:32Z",
     "signature": "12658096074254294228",
     "version": 3
